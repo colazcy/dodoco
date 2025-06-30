@@ -1,0 +1,12 @@
+{
+  "threshold": 0,
+  "reporters": ["consoleFull"],
+  "ignore": [
+    "super-linter-output/**",
+    "**/__snapshots__/**",
+    "**/node_modules/**",
+    "**/src-tauri/target/**",
+    "**/src-tauri/icons/**"
+  ],
+  "absolute": true
+}

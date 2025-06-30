@@ -1,0 +1,73 @@
+parser: "@typescript-eslint/parser"
+
+parserOptions:
+  ecmaVersion: 2024
+  sourceType: "module"
+  ecmaFeatures:
+    jsx: true
+
+env:
+  browser: true
+  es6: true
+
+ignorePatterns:
+  - "!.*"
+  - "**/node_modules/.*"
+
+extends:
+  - "eslint:recommended"
+  - "plugin:@typescript-eslint/recommended"
+  - "plugin:react/recommended"
+  - "plugin:react-hooks/recommended"
+  - "plugin:prettier/recommended"
+
+plugins:
+  - "@typescript-eslint"
+  - "react"
+  - "react-hooks"
+  - "prettier"
+  - "import"
+
+rules:
+  react/react-in-jsx-scope: off
+  react/jsx-uses-react: off
+  prettier/prettier: error
+  import/no-unresolved: error
+  import/named: error
+
+settings:
+  react:
+    version: "detect"
+  import/resolver:
+    alias:
+      map:
+        - ["@", "./src"]
+      extensions: [".ts", ".tsx", "js", "jsx"]
+
+overrides:
+  # JSON files
+  - files:
+      - "*.json"
+    extends:
+      - plugin:jsonc/recommended-with-json
+    parser: jsonc-eslint-parser
+    parserOptions:
+      jsonSyntax: JSON
+
+  # JSONC files
+  - files:
+      - "*.jsonc"
+    extends:
+      - plugin:jsonc/recommended-with-jsonc
+    parser: jsonc-eslint-parser
+    parserOptions:
+      jsonSyntax: JSONC
+
+  # JSON5 files
+  - files:
+      - "*.json5"
+    extends:
+      - plugin:jsonc/recommended-with-json5
+    parser: jsonc-eslint-parser
+    parserOptions:
+      jsonSyntax: JSON5

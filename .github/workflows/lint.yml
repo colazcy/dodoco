@@ -1,0 +1,80 @@
+name: "Lint"
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+  pull_request: null
+
+permissions: {}
+
+jobs:
+  super-linter:
+    name: Run super-linter
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Load super-linter configuration
+        run: grep -v '^#' .github/super-linter.env >> "$GITHUB_ENV"
+
+      - name: Run super-linter
+        uses: super-linter/super-linter/slim@v7.3.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SAVE_SUPER_LINTER_OUTPUT: true
+
+      - name: Archive super-linter results
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: super-linter-results
+          path: super-linter-output/super-linter
+
+  rust:
+    name: Run rust-clippy and rustfmt
+    runs-on: ubuntu-22.04
+
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Run rust-clippy and rustfmt
+        run: |
+          cd src-tauri
+          cargo clippy --all-targets --all-features -- -D warnings
+          cargo fmt --all -- --check

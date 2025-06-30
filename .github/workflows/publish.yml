@@ -1,0 +1,92 @@
+name: "Publish"
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions: {}
+
+jobs:
+  publish-tauri:
+    permissions:
+      contents: write
+
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - platform: "macos-latest"
+            target: "aarch64-apple-darwin"
+            zip_name: "dodoco-macos-aarch64.zip"
+            build_dir: "src-tauri/target/aarch64-apple-darwin/release/bundle/dmg"
+            ext: "dmg"
+
+          - platform: "macos-latest"
+            target: "x86_64-apple-darwin"
+            zip_name: "dodoco-macos-x86_64.zip"
+            build_dir: "src-tauri/target/x86_64-apple-darwin/release/bundle/dmg"
+            ext: "dmg"
+
+          - platform: "ubuntu-22.04"
+            target: "x86_64-unknown-linux-gnu"
+            zip_name: "dodoco-linux-x86_64.zip"
+            build_dir: "src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage"
+            ext: "AppImage"
+
+          - platform: "windows-latest"
+            target: "x86_64-pc-windows-msvc"
+            zip_name: "dodoco-windows-x86_64.zip"
+            build_dir: "src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi"
+            ext: "msi"
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install dependencies (Ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install frontend dependencies
+        run: pnpm install
+
+      - name: Build application
+        uses: tauri-apps/tauri-action@v0
+        with:
+          args: --target ${{matrix.target}}
+
+      - name: Install zip (Windows only)
+        if: matrix.platform == 'windows-latest'
+        run: choco install zip -y
+
+      - name: Package Build Artifacts
+        shell: bash
+        run: |
+          zip ${{matrix.build_dir}}/${{matrix.zip_name}} ${{matrix.build_dir}}/*.${{matrix.ext}}
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            ${{matrix.build_dir}}/${{matrix.zip_name}}
